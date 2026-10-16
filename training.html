@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e9ecec">
+<title>Training Log</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #e9ecec; --surface: #f5f7f7; --ink: #14191c; --muted: #56626a; --rule: #c8d0d3;
+  --seg: #dbe1e3; --accent: #4450b4; --on-accent: #ffffff;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101315; --surface: #181d20; --ink: #e9eded; --muted: #96a2a7; --rule: #2a3236;
+    --seg: #1d2326; --accent: #9aa8f2; --on-accent: #0b0e24;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101315; --surface: #181d20; --ink: #e9eded; --muted: #96a2a7; --rule: #2a3236;
+  --seg: #1d2326; --accent: #9aa8f2; --on-accent: #0b0e24;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); -webkit-text-size-adjust: 100%; overscroll-behavior-y: none; }
+body {
+  margin: 0; min-height: 100dvh; background: var(--bg); color: var(--ink);
+  font: 400 1rem/1.45 var(--font-body);
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(40px + env(safe-area-inset-bottom, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+header h1 { margin: 0; font: 700 1.7rem/1.05 var(--font-display); text-transform: uppercase; letter-spacing: 0.01em; }
+/* App bar: title and week stay at the top while you scroll, like a native app. */
+.tl-appbar { position: sticky; top: 0; z-index: 10; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-left, 0px)) 12px; background: color-mix(in srgb, var(--bg) 92%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.tl-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tl-bar-row .tl-num { min-width: 0; font-size: 1.3rem; }
+.tl-appbar .tl-weekbar { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.tl-appbar .tl-weekbar .tl-btn { width: 100%; }
+[hidden] { display: none !important; }
+.tl-wrap { display: flex; flex-direction: column; gap: 14px; max-width: 40rem; margin: 0 auto; }
+.tl-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tl-label { font: 600 0.75rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.tl-weekbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.tl-num { font: 700 1.6rem/1 var(--font-display); text-transform: uppercase; text-align: center; min-width: 6rem; }
+.tl-btn { min-height: 48px; padding: 0 18px; border: 1px solid var(--ink); border-radius: 10px; background: transparent; color: var(--ink); font: 700 1.1rem/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; touch-action: manipulation; }
+.tl-btn:active:not(:disabled) { transform: scale(0.97); }
+.tl-btn.tl-primary { border: 0; background: var(--accent); color: var(--on-accent); width: 100%; }
+.tl-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Save stays at the bottom of the screen while you log sets, like an app's action bar. */
+.tl-savebar { position: sticky; bottom: 0; z-index: 5; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left))); padding: 10px max(16px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 94%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); border-top: 1px solid var(--rule); }
+.tl-savebar .tl-btn { min-height: 52px; font-size: 1rem; white-space: nowrap; }
+.tl-btn.tl-small { min-height: 40px; padding: 0 14px; font-size: 1rem; }
+.tl-sessions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; background: var(--seg); border-radius: 12px; }
+.tl-sessions button { min-height: 44px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font: 600 0.98rem var(--font-body); cursor: pointer; touch-action: manipulation; }
+.tl-sessions button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.tl-sessions button:hover:not([aria-pressed="true"]) { background: var(--surface); }
+.tl-head h2 { margin: 2px 0 0; font: 700 1.6rem/1.05 var(--font-display); text-transform: uppercase; text-wrap: balance; }
+.tl-head p { margin: 4px 0 0; color: var(--muted); font-size: 0.92rem; }
+.tl-ex { border-top: 1px solid var(--rule); padding-top: 18px; padding-bottom: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tl-ss { margin: 0; font: 700 0.72rem/1.2 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.tl-ex.ss { border-left: 3px solid var(--ink); padding-left: 12px; }
+.tl-ex h3 { margin: 0; font: 600 1.05rem/1.25 var(--font-body); overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.tl-sets { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; align-items: center; }
+.tl-sets .tl-n { font: 600 0.8rem var(--font-body); color: var(--muted); text-align: center; }
+.tl-sets .tl-hd { font: 600 0.7rem/1 var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.tl-sets input { width: 100%; min-width: 0; min-height: 44px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); font: 500 1rem var(--font-body); text-align: center; font-variant-numeric: tabular-nums; }
+.tl-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tl-field textarea, .tl-field input[type="text"] { width: 100%; min-width: 0; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); font: 500 0.98rem/1.4 var(--font-body); padding: 10px 12px; }
+.tl-field textarea { min-height: 84px; resize: vertical; }
+.tl-field input[type="text"] { min-height: 46px; }
+.tl-field textarea[readonly] { opacity: 0.8; }
+.tl-wod-head { margin: 0; font: 600 0.95rem/1.35 var(--font-body); overflow-wrap: anywhere; }
+.tl-wod-t { width: 100%; border-collapse: collapse; font: 500 0.95rem/1.3 var(--font-body); }
+.tl-wod-t th { text-align: left; font: 600 0.7rem/1 var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 8px 6px; border-bottom: 1px solid var(--rule); }
+.tl-wod-t td { padding: 10px 6px; border-bottom: 1px solid var(--rule); vertical-align: middle; overflow-wrap: anywhere; }
+.tl-wod-t th:nth-child(n+2), .tl-wod-t td:nth-child(n+2) { text-align: center; white-space: nowrap; }
+.tl-wod-t input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+/* WOD and Finisher headings use the same type as the exercise names. */
+.tl-label.tl-title { font: 700 1.3rem/1.1 var(--font-display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink); }
+.tl-row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tl-row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tl-row3 .tl-btn, .tl-row2 .tl-btn { width: 100%; }
+.tl-check { display: flex; align-items: center; gap: 10px; font: 600 0.95rem var(--font-body); min-height: 40px; }
+.tl-check input { width: 22px; height: 22px; accent-color: var(--accent); }
+.tl-status { min-height: 1.2em; margin: 0; font-size: 0.9rem; color: var(--muted); }
+.tl-note { margin: 0; color: var(--muted); font-size: 0.92rem; }
+.tl-recent { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.tl-recent li { padding-block: 10px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tl-recent li:first-child { border-top: 0; }
+.tl-recent .tl-when { font: 600 0.72rem/1.2 var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.tl-recent .tl-what { font: 600 1rem/1.3 var(--font-body); overflow-wrap: anywhere; }
+.tl-recent .tl-sub { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+.tl-empty { margin: 0; color: var(--muted); }
+.tl-views { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; background: var(--seg); border-radius: 10px; min-width: 12rem; }
+.tl-bar-row h1 { font-size: 1.45rem; white-space: nowrap; }
+.tl-views { flex: 0 0 auto; }
+.tl-views button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font: 600 0.9rem var(--font-body); cursor: pointer; }
+.tl-views button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.tl-prog .tl-log { display: none !important; }
+.tl-target { font: 600 0.8rem/1.3 var(--font-body); color: var(--muted); }
+.tl-addw { padding: 4px 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 700 0.72rem/1.2 var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; }
+.tl-ss-tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: var(--seg); color: var(--muted); font: 700 0.7rem/1.4 var(--font-body); letter-spacing: 0.06em; vertical-align: middle; }
+.tl-chart svg { width: 100%; height: auto; display: block; }
+.tl-chart text { fill: var(--muted); font: 500 11px var(--font-body); }
+.tl-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; font: 600 0.8rem var(--font-body); color: var(--muted); }
+.tl-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.tl-table-wrap { overflow-x: auto; }
+.tl-prog-table { width: 100%; border-collapse: collapse; font: 500 0.82rem/1.3 var(--font-body); font-variant-numeric: tabular-nums; }
+.tl-prog-table th, .tl-prog-table td { padding: 8px 3px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+.tl-prog-table th { font: 600 0.64rem/1.15 var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); white-space: normal; }
+.tl-prog-table th:first-child, .tl-prog-table td:first-child { text-align: left; }
+</style>
+</head>
+<body>
+<main class="tl-wrap">
+
+  <header class="tl-appbar">
+    <div class="tl-bar-row">
+      <h1>Training log</h1>
+      <div class="tl-views" role="group" aria-label="View">
+        <button type="button" id="t-view-log" aria-pressed="true">Log</button>
+        <button type="button" id="t-view-prog" aria-pressed="false">Progress</button>
+      </div>
+    </div>
+    <div class="tl-weekbar tl-log">
+      <button class="tl-btn tl-small" id="t-prev" type="button" aria-label="Previous week">&lsaquo; Prev</button>
+      <span class="tl-num" id="t-weeknum" aria-live="polite">Week 1</span>
+      <button class="tl-btn tl-small" id="t-next" type="button" aria-label="Next week">Next &rsaquo;</button>
+    </div>
+  </header>
+
+  <section class="tl-card tl-log" aria-label="Sessions">
+    <div class="tl-sessions" id="t-sessions" role="group" aria-label="Session"></div>
+  </section>
+
+  <section class="tl-card tl-log" aria-label="Session">
+    <div class="tl-head">
+      <p class="tl-label" id="t-week-label"></p>
+      <h2 id="t-title"></h2>
+    </div>
+    <div id="t-exercises"></div>
+    <div class="tl-field">
+      <span class="tl-label tl-title">WOD</span>
+      <textarea id="t-mini-text" rows="6" placeholder="Paste the WOD from Copy for training log in the mini-pump" aria-label="WOD"></textarea>
+      <div id="t-wod-table" hidden></div>
+      <div class="tl-row3">
+        <button class="tl-btn tl-small" id="t-mini-clear" type="button">Clear</button>
+        <button class="tl-btn tl-small" id="t-mini-edit" type="button">Edit</button>
+        <button class="tl-btn tl-small" id="t-mini-save" type="button">Save</button>
+      </div>
+    </div>
+    <div class="tl-field">
+      <span class="tl-label tl-title">Finisher</span>
+      <input type="text" id="t-fin-name" placeholder="For example Jump rope 10 min" autocomplete="off" aria-label="Finisher name">
+      <label class="tl-check"><input type="checkbox" id="t-fin-done"> Completed</label>
+    </div>
+    <div class="tl-field">
+      <span class="tl-label">Notes</span>
+      <textarea id="t-note" placeholder="How it felt, what to change next time" aria-label="Notes"></textarea>
+    </div>
+    <p class="tl-status" id="t-status" role="status"></p>
+  </section>
+
+  <div class="tl-savebar tl-log"><div class="tl-row2"><button class="tl-btn" id="t-del" type="button">Delete saved</button><button class="tl-btn tl-primary" id="t-save" type="button">Save session</button></div></div>
+
+  <section class="tl-card tl-progress" id="t-progress" aria-label="Progress" hidden>
+    <span class="tl-label">Main lift</span>
+    <div class="tl-sessions" id="t-lifts" role="group" aria-label="Main lift"></div>
+    <p class="tl-empty" id="t-prog-empty" hidden></p>
+    <span class="tl-label">Weight (kg) by week</span>
+    <div class="tl-chart" id="t-chart-kg"></div>
+    <span class="tl-label">Reps by week</span>
+    <div class="tl-chart" id="t-chart-reps"></div>
+    <span class="tl-label">Week by week</span>
+    <div class="tl-table-wrap" id="t-prog-table"></div>
+  </section>
+
+  <section class="tl-card tl-log" aria-label="Recent entries">
+    <span class="tl-label">Recent</span>
+    <p class="tl-empty" id="t-recent-empty" hidden></p>
+    <ul class="tl-recent" id="t-recent"></ul>
+  </section>
+
+</main>
+<script>
+// Training log. Runs in its own scope so its names do not clash with the mini-pump code on the same site.
+(function () {
+  const SESSIONS = [
+    { key: 'push', label: 'Push', title: 'Push', ex: ['Barbell bench press', 'Incline dumbbell bench press', 'Band triceps pushdowns', 'Seated Arnold press'], ss: { 'Incline dumbbell bench press': 'A1', 'Band triceps pushdowns': 'A2' } },
+    { key: 'leg', label: 'Leg', title: 'Leg and core', ex: ['Barbell back squat', { hip: 'Hip thrust', rdl: 'Romanian deadlift' }, 'Dumbbell reverse lunges', 'Hanging knee raises'], ss: { 'Dumbbell reverse lunges': 'A1', 'Hanging knee raises': 'A2' } },
+    { key: 'pull', label: 'Pull', title: 'Pull', ex: ['Barbell deadlift', 'Pull-ups', 'Barbell rows', 'Dumbbell rear-delt flyes', 'Dumbbell curls'], ss: { 'Dumbbell rear-delt flyes': 'A1', 'Dumbbell curls': 'A2' } },
+    { key: 'hypertrophy', label: 'Hypertrophy', title: 'Upper hypertrophy', ex: ['Barbell push press', 'Chest-leaning dips', 'Band chest flyes', 'Unilateral dumbbell lateral raises', 'Dumbbell shrugs', 'EZ-bar curls', 'EZ-bar lying triceps extensions'], ss: { 'Chest-leaning dips': 'A1', 'Band chest flyes': 'A2', 'Unilateral dumbbell lateral raises': 'B1', 'Dumbbell shrugs': 'B2', 'EZ-bar curls': 'C1', 'EZ-bar lying triceps extensions': 'C2' } }
+  ];
+  // Program targets from the training program, shown under each exercise name.
+  const TARGETS = {
+    'Barbell bench press': '4×6–10', 'Incline dumbbell bench press': '3×8–12', 'Band triceps pushdowns': '3×12–20', 'Seated Arnold press': '3×8–12',
+    'Barbell back squat': '4×5–8', 'Romanian deadlift': '3×8–12', 'Hip thrust': '3×8–12', 'Dumbbell reverse lunges': '3×8/leg', 'Hanging knee raises': '3×10–15',
+    'Barbell deadlift': '3×4–6', 'Pull-ups': '3×6–10', 'Barbell rows': '3×6–10', 'Dumbbell rear-delt flyes': '3×12–20', 'Dumbbell curls': '3×8–12',
+    'Barbell push press': '4×4–6', 'Chest-leaning dips': '3×8–12', 'Band chest flyes': '3×12–20', 'Unilateral dumbbell lateral raises': '3×12–20/side', 'Dumbbell shrugs': '3×10–15', 'EZ-bar curls': '3×10–15', 'EZ-bar lying triceps extensions': '3×10–15'
+  };
+  // Main lifts for the progress page.
+  const MAIN_LIFTS = ['Barbell back squat', 'Barbell bench press', 'Barbell deadlift', 'Barbell push press'];
+  const KG_SERIES = [{ key: 'kgMax', name: 'Max', color: 'var(--accent)' }, { key: 'kgAvg', name: 'Average', color: 'var(--ink)' }, { key: 'kgMin', name: 'Min', color: 'var(--muted)' }];
+  const REP_SERIES = [{ key: 'repMax', name: 'Max', color: 'var(--accent)' }, { key: 'repAvg', name: 'Average', color: 'var(--ink)' }, { key: 'repMin', name: 'Min', color: 'var(--muted)' }];
+  // The first exercise of a session is a series of 4 working sets (warm-up not logged); the others have 3.
+  const setsFor = function (i) { return i === 0 ? 4 : 3; };
+  // Leg day: odd weeks use Romanian deadlift, even weeks Hip thrust.
+  const namesOf = function (s) { return s.ex.map(function (e) { return typeof e === 'string' ? e : (week % 2 === 1 ? e.rdl : e.hip); }); };
+  const T = function (id) { return document.getElementById('t-' + id); };
+  const pad2 = function (n) { return String(n).padStart(2, '0'); };
+  const docId = function (wk, key) { return 'w' + pad2(wk) + '-' + key; };
+  const sessionOf = function (key) { return SESSIONS.find(function (s) { return s.key === key; }); };
+
+  let db = null, uid = null, week = 1, sessionKey = 'push', loadToken = 0;
+  let wodTicks = {};
+  let liftKey = MAIN_LIFTS[0];
+  const col = function () { return db && uid ? db.collection('data/users/' + uid) : null; };
+  const setStatus = function (m) { T('status').textContent = m; };
+
+  // Browser storage. It uses the same key as the mini-pump page on this site, so entries it saves show up here.
+  const TL_STORE = 'mini-pump-training-v1';
+  const tlRead = function () { try { return JSON.parse(localStorage.getItem(TL_STORE) || '{}'); } catch (e) { return {}; } };
+  const tlWrite = function (o) { try { localStorage.setItem(TL_STORE, JSON.stringify(o)); return true; } catch (e) { return false; } };
+  function localDb() {
+    return {
+      collection: function () {
+        return {
+          doc: function (id) {
+            return {
+              get: async function () { const d = tlRead()[id]; return { id: id, exists: d !== undefined, data: function () { return d; } }; },
+              set: async function (body) { const o = tlRead(); o[id] = JSON.parse(JSON.stringify(body)); if (!tlWrite(o)) throw { code: 'quota_exceeded' }; }
+            };
+          },
+          orderBy: function (f) {
+            return { limit: function (n) { return { get: async function () {
+              const o = tlRead();
+              const docs = Object.keys(o).map(function (k) { return { id: k, data: function () { return o[k]; } }; });
+              docs.sort(function (a, b) { return String(b.data()[f] || '').localeCompare(String(a.data()[f] || '')); });
+              return { docs: docs.slice(0, n) };
+            } }; } };
+          }
+        };
+      }
+    };
+  }
+
+  function buildSessions() {
+    const wrap = T('sessions');
+    wrap.innerHTML = '';
+    SESSIONS.forEach(function (s) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.key = s.key; b.textContent = s.label;
+      b.addEventListener('click', function () { if (sessionKey !== s.key) { sessionKey = s.key; renderSession(); loadSession(); } });
+      wrap.appendChild(b);
+    });
+  }
+  function markSessions() {
+    document.querySelectorAll('#t-sessions button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.key === sessionKey)); });
+  }
+  function renderWeek() { T('weeknum').textContent = 'Week ' + week; }
+
+  function renderSession() {
+    const s = sessionOf(sessionKey);
+    markSessions();
+    T('week-label').textContent = 'Week ' + week;
+    T('title').textContent = s.title;
+    renderExercises();
+    fillFields({});
+  }
+
+  function renderExercises() {
+    const s = sessionOf(sessionKey);
+    const exBox = T('exercises');
+    exBox.innerHTML = '';
+    namesOf(s).forEach(function (name, i) {
+      const wrap = document.createElement('div'); wrap.className = 'tl-ex'; wrap.dataset.name = name;
+      const sv = (s.ss || {})[name];
+      if (sv) { wrap.classList.add('ss'); const t = document.createElement('p'); t.className = 'tl-ss'; t.textContent = 'Superset ' + sv[0] + ' · ' + sv[1]; wrap.appendChild(t); }
+      const h = document.createElement('h3');
+      const nm = document.createElement('span'); nm.className = 'tl-name'; nm.textContent = name; h.appendChild(nm);
+      if (TARGETS[name]) { const tg = document.createElement('span'); tg.className = 'tl-target'; tg.textContent = 'Target ' + TARGETS[name]; h.appendChild(tg); }
+      wrap.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'tl-sets';
+      ['', 'Kg', 'Reps'].forEach(function (t) { const sp = document.createElement('span'); sp.className = 'tl-hd'; sp.textContent = t; grid.appendChild(sp); });
+      for (let k = 0; k < setsFor(i); k++) {
+        const n = document.createElement('span'); n.className = 'tl-n'; n.textContent = String(k + 1); grid.appendChild(n);
+        ['kg', 'reps'].forEach(function (f) {
+          const inp = document.createElement('input');
+          inp.type = 'text'; inp.inputMode = f === 'kg' ? 'decimal' : 'numeric'; inp.autocomplete = 'off';
+          inp.dataset.ex = i; inp.dataset.set = k; inp.dataset.f = f;
+          inp.setAttribute('aria-label', name + ' set ' + (k + 1) + ' ' + f);
+          grid.appendChild(inp);
+        });
+      }
+      wrap.appendChild(grid);
+      exBox.appendChild(wrap);
+    });
+  }
+
+  // The mini-pump field is read-only once saved; Edit unlocks it, Save locks it again and saves the session.
+  function setMiniEdit(on) {
+    T('mini-text').readOnly = !on;
+    T('mini-edit').disabled = on;
+    T('mini-save').disabled = !on;
+    T('mini-text').hidden = !on && T('mini-text').value.trim() !== '';
+    if (!on) renderWodTable(); else T('wod-table').hidden = true;
+  }
+
+  // The saved WOD as a table: exercise, reps and weight. A movement is ticked automatically when it has reps or weight.
+  function renderWodTable() {
+    const box = T('wod-table');
+    box.innerHTML = '';
+    const head = { title: '', result: '' }, rows = [];
+    String(T('mini-text').value || '').split('\n').forEach(function (raw) {
+      const l = raw.trim();
+      let m;
+      if (!l) return;
+      if ((m = l.match(/^Mini-pump:\s*(.*)$/i))) { head.title = m[1]; return; }
+      if ((m = l.match(/^Result:\s*(.*)$/i))) { head.result = m[1]; return; }
+      if ((m = l.match(/^(\d+)\s+times\s+(.+?)\s+-\s+(.+?)\s*kg$/i))) rows.push({ name: m[2], reps: m[1], kg: m[3] });
+      else if ((m = l.match(/^(.+?)\s+-\s+(.+?)\s*kg$/i))) rows.push({ name: m[1], reps: '', kg: m[2] });
+      else rows.push({ name: l, reps: '', kg: '' });
+    });
+    if (!rows.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const captionText = [head.title, head.result ? 'Result: ' + head.result : ''].filter(Boolean).join(' · ');
+    if (captionText) { const c = document.createElement('p'); c.className = 'tl-wod-head'; c.textContent = captionText; box.appendChild(c); }
+    const t = document.createElement('table'); t.className = 'tl-wod-t';
+    const thead = document.createElement('thead'), hr = document.createElement('tr');
+    ['Exercise', 'Reps', 'Weight', 'Done'].forEach(function (h) { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+    thead.appendChild(hr); t.appendChild(thead);
+    const tb = document.createElement('tbody');
+    const sup = sessionOf(sessionKey).ss || {};
+    rows.forEach(function (r, i) {
+      const tr = document.createElement('tr');
+      const cells = [r.name, r.reps ? r.reps : '\u2013', r.kg !== '' ? r.kg + ' kg' : '\u2013'];
+      cells.forEach(function (txt, ci) {
+        const td = document.createElement('td'); td.textContent = txt;
+        if (ci === 0 && sup[r.name]) { const tag = document.createElement('span'); tag.className = 'tl-ss-tag'; tag.textContent = sup[r.name]; td.appendChild(tag); }
+        tr.appendChild(td);
+      });
+      const td = document.createElement('td'), cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = i in wodTicks ? !!wodTicks[i] : !!(r.reps || r.kg !== '');
+      cb.addEventListener('change', function () { wodTicks[i] = cb.checked; });
+      cb.setAttribute('aria-label', r.name + ' done');
+      td.appendChild(cb); tr.appendChild(td);
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); box.appendChild(t);
+  }
+
+  // A "Finisher: <name> - done" line in the mini-pump text belongs to the Finisher section, with its Completed tick.
+  function splitFinisher(text) {
+    const keep = [];
+    let fin = null;
+    String(text || '').split('\n').forEach(function (l) {
+      const m = l.match(/^Finisher:\s*(.*)$/i);
+      if (m) fin = { name: m[1].replace(/\s*-\s*done\s*$/i, '').trim(), done: /-\s*done\s*$/i.test(m[1]) };
+      else keep.push(l);
+    });
+    return { text: keep.join('\n').replace(/\s+$/, ''), fin: fin };
+  }
+
+  // The mini-pump text as the training log shows it. Entries saved before the single field have name, result and lines instead.
+  function miniTextOf(m) {
+    if (!m) return '';
+    if (m.text) return m.text;
+    const out = [];
+    if (m.name) out.push('Mini-pump: ' + m.name);
+    if (m.result) out.push('Result: ' + m.result);
+    (m.lines || []).forEach(function (x) { out.push((x.reps ? x.reps + ' times ' : '') + x.name + ' - ' + (x.kg || '0') + ' kg'); });
+    return out.join('\n');
+  }
+
+  function fillExercises(ex) {
+    ex = ex || [];
+    document.querySelectorAll('#t-exercises input').forEach(function (inp) {
+      const row = ex[Number(inp.dataset.ex)];
+      const set = row && row.sets ? row.sets[Number(inp.dataset.set)] : null;
+      inp.value = set && set[inp.dataset.f] != null ? String(set[inp.dataset.f]) : '';
+    });
+  }
+
+  function fillFields(data) {
+    fillExercises(data.exercises);
+    wodTicks = (data.mini && data.mini.ticks) || {};
+    const sp = splitFinisher(miniTextOf(data.mini));
+    T('mini-text').value = sp.text;
+    setMiniEdit(!T('mini-text').value);
+    T('fin-done').checked = !!((data.finisher && data.finisher.done) || (sp.fin && sp.fin.done));
+    T('fin-name').value = (data.finisher && data.finisher.name) || (sp.fin ? sp.fin.name : '');
+    T('note').value = data.note || '';
+  }
+
+  function gather() {
+    const s = sessionOf(sessionKey);
+    const exercises = namesOf(s).map(function (name, i) {
+      const sets = [];
+      for (let k = 0; k < setsFor(i); k++) {
+        const kg = document.querySelector('#t-exercises input[data-ex="' + i + '"][data-set="' + k + '"][data-f="kg"]').value.trim();
+        const reps = document.querySelector('#t-exercises input[data-ex="' + i + '"][data-set="' + k + '"][data-f="reps"]').value.trim();
+        if (kg || reps) sets.push({ kg: kg, reps: reps });
+      }
+      return { name: name, sets: sets };
+    }).filter(function (e) { return e.sets.length > 0; });
+    const sp = splitFinisher(T('mini-text').value);
+    return {
+      week: week, key: s.key, title: s.title,
+      exercises: exercises,
+      mini: { text: sp.text, ticks: wodTicks },
+      finisher: { name: T('fin-name').value.trim() || (sp.fin ? sp.fin.name : ''), done: T('fin-done').checked || !!(sp.fin && sp.fin.done) },
+      note: T('note').value.trim()
+    };
+  }
+
+  async function loadSession() {
+    const token = ++loadToken;
+    const c = col();
+    if (!c) return;
+    setStatus('Loading...');
+    try {
+      const snap = await c.doc(docId(week, sessionKey)).get();
+      if (token !== loadToken) return;
+      const data = snap.exists ? snap.data() : {};
+      renderExercises();
+      fillFields(data);
+      prefillFromLastWeek(token);
+      setStatus(snap.exists ? 'Saved session loaded.' : '');
+    } catch (e) {
+      if (token === loadToken) setStatus('Could not load this session. Try again.');
+    }
+  }
+
+  async function saveSession() {
+    const c = col();
+    if (!c) return;
+    const body = gather();
+    body.savedAt = new Date().toISOString();
+    T('save').disabled = true;
+    setStatus('Saving...');
+    try {
+      await c.doc(docId(week, sessionKey)).set(body);
+      setStatus('Saved.');
+      loadRecent();
+    } catch (e) {
+      setStatus(e && e.code === 'quota_exceeded' ? 'The store is full. Delete old entries to save more.' : 'Not saved. Try again.');
+    } finally {
+      T('save').disabled = false;
+    }
+  }
+
+  async function loadRecent() {
+    const c = col();
+    const list = T('recent');
+    list.innerHTML = '';
+    if (!c) return;
+    try {
+      const q = await c.orderBy('savedAt', 'desc').limit(14).get();
+      const live = q.docs.filter(function (d) { return !(d.data() || {}).deleted; });
+      T('recent-empty').hidden = live.length > 0;
+      T('recent-empty').textContent = 'Nothing logged yet.';
+      live.forEach(function (d) {
+        const e = d.data() || {};
+        const li = document.createElement('li');
+        const when = document.createElement('span'); when.className = 'tl-when'; when.textContent = 'Week ' + e.week;
+        const what = document.createElement('span'); what.className = 'tl-what'; what.textContent = e.title || '';
+        li.appendChild(when); li.appendChild(what);
+        const parts = (e.exercises || []).map(function (x) {
+          return x.name + ': ' + x.sets.map(function (s) { return (s.kg ? s.kg + ' kg' : '') + (s.kg && s.reps ? ' x ' : '') + (s.reps || ''); }).join(', ');
+        });
+        const mt = miniTextOf(e.mini);
+        if (mt) parts.push(mt.split('\n').join(' · '));
+        if (e.finisher && (e.finisher.name || e.finisher.result)) parts.push('Finisher' + (e.finisher.name ? ' (' + e.finisher.name + ')' : '') + ': ' + (e.finisher.result || '-'));
+        if (parts.length) { const sub = document.createElement('span'); sub.className = 'tl-sub'; sub.textContent = parts.join(' · '); li.appendChild(sub); }
+        list.appendChild(li);
+      });
+    } catch (e) {
+      T('recent-empty').hidden = false;
+      T('recent-empty').textContent = 'Could not load recent entries.';
+    }
+  }
+
+  // Last week's kg and reps for the same exercise appear as grey placeholders; typing replaces them.
+  async function prefillFromLastWeek(token) {
+    const c = col();
+    if (!c || week <= 1) return;
+    try {
+      const snap = await c.doc(docId(week - 1, sessionKey)).get();
+      if (token !== loadToken || !snap.exists) return;
+      const byName = {};
+      ((snap.data() || {}).exercises || []).forEach(function (x) { byName[x.name] = x; });
+      document.querySelectorAll('#t-exercises .tl-ex').forEach(function (wrap) {
+        const name = wrap.dataset.name;
+        const row = byName[name];
+        // Double progression: when every set last week reached the top of the rep range, the next session says to add weight.
+        wrap.querySelectorAll('.tl-addw').forEach(function (x) { x.remove(); });
+        const tg = targetOf(name);
+        const sets = row ? (row.sets || []) : [];
+        if (tg && sets.length && sets.every(function (st) { return Number(st.reps) >= tg.hi; })) {
+          const tag = document.createElement('span');
+          tag.className = 'tl-addw'; tag.textContent = 'Add weight';
+          wrap.querySelector('h3').appendChild(tag);
+        }
+        if (!row) return;
+        wrap.querySelectorAll('input').forEach(function (inp) {
+          const set = (row.sets || [])[Number(inp.dataset.set)];
+          if (set && set[inp.dataset.f] != null && inp.value === '') inp.placeholder = String(set[inp.dataset.f]);
+        });
+      });
+    } catch (e) { /* placeholders are optional */ }
+  }
+
+  // Delete: the saved session is replaced by an empty, marked entry, so it also leaves the recent list.
+  async function deleteSession() {
+    const c = col();
+    if (!c) return;
+    const title = sessionOf(sessionKey).title;
+    if (!confirm('Delete the saved ' + title + ' session for week ' + week + '?')) return;
+    try {
+      await c.doc(docId(week, sessionKey)).set({ week: week, key: sessionKey, title: title, deleted: true, savedAt: new Date().toISOString(), exercises: [], mini: { text: '' }, finisher: {}, note: '' });
+      wodTicks = {};
+      renderSession();
+      setStatus('Deleted.');
+      loadRecent();
+    } catch (e) { setStatus('Not deleted. Try again.'); }
+  }
+
+  // Progress: per week, the max, min and average of weight and reps for one main lift.
+  // The program target for a lift, such as 4×6–10: sets, bottom and top of the rep range.
+  function targetOf(lift) {
+    const m = String(TARGETS[lift] || '').match(/^(\d+)×(\d+)–(\d+)/);
+    return m ? { sets: Number(m[1]), lo: Number(m[2]), hi: Number(m[3]) } : null;
+  }
+
+  function progressRows(docs, lift) {
+    const tg = targetOf(lift);
+    const byWeek = {};
+    docs.forEach(function (d) {
+      if (!d || d.deleted || !d.week || !Array.isArray(d.exercises)) return;
+      d.exercises.forEach(function (x) {
+        if (x.name !== lift) return;
+        const w = byWeek[d.week] || (byWeek[d.week] = { sets: 0, kg: [], reps: [], e1rm: [], top: 0 });
+        (x.sets || []).forEach(function (st) {
+          w.sets++;
+          const kg = parseFloat(String(st.kg == null ? '' : st.kg).replace(',', '.'));
+          const reps = parseFloat(String(st.reps == null ? '' : st.reps));
+          if (isFinite(kg)) w.kg.push(kg);
+          if (isFinite(reps)) w.reps.push(reps);
+          if (isFinite(kg) && isFinite(reps) && reps > 0) w.e1rm.push(kg * (1 + reps / 30));
+          if (tg && isFinite(reps) && reps >= tg.hi) w.top++;
+        });
+      });
+    });
+    const stat = function (a, f) { return a.length ? f.apply(null, a) : null; };
+    const avg = function (a) { return a.length ? a.reduce(function (t, v) { return t + v; }, 0) / a.length : null; };
+    return Object.keys(byWeek).map(Number).sort(function (a, b) { return a - b; }).map(function (wk) {
+      const w = byWeek[wk];
+      return { week: wk, sets: w.sets,
+        kgMax: stat(w.kg, Math.max), kgAvg: avg(w.kg), kgMin: stat(w.kg, Math.min),
+        repMax: stat(w.reps, Math.max), repAvg: avg(w.reps), repMin: stat(w.reps, Math.min),
+        e1rm: stat(w.e1rm, Math.max), top: w.top };
+    });
+  }
+
+  // Grouped bars: for each week, the max, average and min side by side. Bars start from zero.
+  function barChart(el, rows, series) {
+    el.innerHTML = '';
+    const NS = 'http://www.w3.org/2000/svg';
+    const W = 360, H = 200, L = 36, R = 8, TP = 10, B = 26;
+    const vals = [];
+    series.forEach(function (sr) { rows.forEach(function (r) { if (r[sr.key] != null) vals.push(r[sr.key]); }); });
+    if (!vals.length) { el.textContent = 'No numbers logged yet.'; return; }
+    const hi = Math.max.apply(null, vals) * 1.1 || 1;
+    const Y = function (v) { return TP + (1 - v / hi) * (H - TP - B); };
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('role', 'img');
+    const add = function (name, attrs, text) {
+      const n = document.createElementNS(NS, name);
+      Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      if (text != null) n.textContent = text;
+      svg.appendChild(n);
+      return n;
+    };
+    for (let g = 0; g <= 3; g++) {
+      const v = hi * g / 3 / 1.1, y = Y(v);
+      add('line', { x1: L, x2: W - R, y1: y, y2: y, style: 'stroke: var(--rule)', 'stroke-width': 1 });
+      add('text', { x: L - 6, y: y + 4, 'text-anchor': 'end' }, String(Math.round(v * 10) / 10));
+    }
+    const group = (W - L - R) / rows.length;
+    rows.forEach(function (r, i) {
+      const gx = L + i * group;
+      const bw = group * 0.72 / series.length;
+      series.forEach(function (sr, si) {
+        const v = r[sr.key];
+        if (v == null) return;
+        const x = gx + group * 0.14 + si * bw;
+        add('rect', { x: x + 1, y: Y(v), width: Math.max(bw - 2, 2), height: Math.max(Y(0) - Y(v), 1), rx: 2, style: 'fill: ' + sr.color });
+        if (si === 0 && group >= 50) add('text', { x: x + bw / 2, y: Y(v) - 4, 'text-anchor': 'middle', style: 'fill: var(--ink); font-weight: 700' }, String(Math.round(v * 10) / 10));
+      });
+      add('text', { x: gx + group / 2, y: H - 8, 'text-anchor': 'middle' }, 'W' + r.week);
+    });
+    el.appendChild(svg);
+    const legend = document.createElement('div');
+    legend.className = 'tl-legend';
+    series.forEach(function (sr) {
+      const item = document.createElement('span'), sw = document.createElement('i');
+      sw.style.background = sr.color;
+      item.appendChild(sw); item.appendChild(document.createTextNode(sr.name));
+      legend.appendChild(item);
+    });
+    el.appendChild(legend);
+  }
+
+  function renderLifts() {
+    const box = T('lifts');
+    box.innerHTML = '';
+    MAIN_LIFTS.forEach(function (name) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = name.replace('Barbell ', '').replace(/^./, function (ch) { return ch.toUpperCase(); });
+      b.setAttribute('aria-pressed', String(name === liftKey));
+      b.addEventListener('click', function () { liftKey = name; renderProgress(); });
+      box.appendChild(b);
+    });
+  }
+
+  async function renderProgress() {
+    renderLifts();
+    const c = col(), empty = T('prog-empty');
+    let docs = [];
+    if (c) {
+      try {
+        const q = await c.orderBy('savedAt', 'desc').limit(300).get();
+        docs = q.docs.map(function (d) { return d.data() || {}; });
+      } catch (e) {
+        empty.hidden = false; empty.textContent = 'Could not load the progress.';
+        return;
+      }
+    }
+    const rows = progressRows(docs, liftKey);
+    const lift = liftKey.replace('Barbell ', '').toLowerCase();
+    empty.hidden = rows.length > 0;
+    empty.textContent = 'No sets logged for ' + lift + ' yet.';
+    barChart(T('chart-kg'), rows, KG_SERIES);
+    barChart(T('chart-reps'), rows, REP_SERIES);
+    const fmt = function (v) { return v == null ? '\u2013' : String(Math.round(v * 10) / 10); };
+    const box = T('prog-table');
+    box.innerHTML = '';
+    if (!rows.length) return;
+    const t = document.createElement('table'); t.className = 'tl-prog-table';
+    const head = ['Week', 'Sets', 'Kg max', 'Kg avg', 'Reps max', 'Reps avg', 'Est 1RM', 'At top'];
+    const thead = document.createElement('thead'), hr = document.createElement('tr');
+    head.forEach(function (h) { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+    thead.appendChild(hr); t.appendChild(thead);
+    const tb = document.createElement('tbody');
+    rows.forEach(function (r) {
+      const tr = document.createElement('tr');
+      [ 'W' + r.week, r.sets, fmt(r.kgMax), fmt(r.kgAvg), fmt(r.repMax), fmt(r.repAvg), fmt(r.e1rm), targetOf(liftKey) ? r.top + '/' + r.sets : '\u2013' ].forEach(function (v) {
+        const td = document.createElement('td'); td.textContent = String(v); tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); box.appendChild(t);
+  }
+
+  function showView(v) {
+    const prog = v === 'prog';
+    document.body.classList.toggle('tl-prog', prog);
+    T('view-log').setAttribute('aria-pressed', String(!prog));
+    T('view-prog').setAttribute('aria-pressed', String(prog));
+    T('progress').hidden = !prog;
+    if (prog) renderProgress();
+  }
+
+  function changeWeek(delta) {
+    week = Math.max(1, week + delta);
+    renderWeek();
+    renderSession();
+    loadSession();
+  }
+
+  function init() {
+    buildSessions();
+    renderWeek();
+    renderSession();
+    T('prev').addEventListener('click', function () { changeWeek(-1); });
+    T('next').addEventListener('click', function () { changeWeek(1); });
+    T('save').addEventListener('click', saveSession);
+    T('mini-clear').addEventListener('click', function () { if (!confirm('Clear the WOD and the finisher?')) return; T('mini-text').value = ''; T('fin-name').value = ''; T('fin-done').checked = false; wodTicks = {}; setMiniEdit(true); T('mini-text').focus(); });
+    T('mini-edit').addEventListener('click', function () { setMiniEdit(true); T('mini-text').focus(); });
+    T('mini-save').addEventListener('click', function () {
+      const sp = splitFinisher(T('mini-text').value);
+      T('mini-text').value = sp.text;
+      if (sp.fin) { if (sp.fin.done) T('fin-done').checked = true; if (!T('fin-name').value.trim()) T('fin-name').value = sp.fin.name; }
+      setMiniEdit(false);
+      saveSession();
+    });
+    T('view-log').addEventListener('click', function () { showView('log'); });
+    T('view-prog').addEventListener('click', function () { showView('prog'); });
+    T('del').addEventListener('click', deleteSession);
+    setMiniEdit(true);
+    db = localDb();
+    uid = 'local';
+    loadSession();
+    loadRecent();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
